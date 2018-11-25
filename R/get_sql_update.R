@@ -1,7 +1,11 @@
 get_sql_update <- function(df, key_col, tablename) {
   val_col <- setdiff(colnames(df), key_col)
   
-  type_df <- map_df(df, class) %>% 
+  df <- df %>%
+    map_if(is.factor, as.character) %>%
+    as_data_frame()
+  
+  type_df <- map_df(df, class) %>%
     gather() %>% 
     mutate(sep = ifelse(value == "character", "'", "")) %>%
     select(-value)
