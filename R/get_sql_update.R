@@ -1,9 +1,7 @@
 get_sql_update <- function(df, key_col, tablename) {
   val_col <- setdiff(colnames(df), key_col)
   
-  df <- df %>%
-    map_if(is.factor, as.character) %>%
-    as_data_frame()
+  df <- df %>% mutate_if(is.factor, as.character)
   
   type_df <- map_df(df, class) %>%
     gather() %>% 

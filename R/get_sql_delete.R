@@ -1,6 +1,7 @@
 get_sql_delete <- function(df, tablename) {
   
   key_col <- colnames(df)
+  df <- df %>% mutate_if(is.factor, as.character)
   
   type_df <- map_df(df, class) %>% 
     gather() %>% 

@@ -1,4 +1,7 @@
 get_sql_insert <- function(df, tablename) {
+  
+  df <- df %>% mutate_if(is.factor, as.character)
+  
   type_df <- map_df(df, class) %>% 
     gather() %>% 
     mutate(sep = ifelse(value == "character", "'", "")) %>%
