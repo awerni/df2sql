@@ -22,7 +22,10 @@ get_sql_upsert <- function(new_df, old_df, key_col, tablename, del_old = FALSE) 
   new_insert_df <- new_keys %>% inner_join(new_df, by = key_col)
   new_overlap_df <- anti_join(new_df, new_keys, by = key_col)
     
-  result_insert <- get_sql_insert(new_insert_df, tablename) %>% select(sql)
+  result_insert <- NULL
+  if (nrow(new_insert_df) > 0) {
+    result_insert <- get_sql_insert(new_insert_df, tablename) %>% select(sql)
+  }
   
   # --- discarded in new_df
   old_keys <- anti_join(keys_from_old, keys_from_new, by = key_col)
@@ -45,14 +48,19 @@ get_sql_upsert <- function(new_df, old_df, key_col, tablename, del_old = FALSE) 
   class_def <- new_overlap_df %>% map_df(class) %>% map(as.character)
   
   # records with new values
-  result_update <- old_df1 %>% 
+  update_df <- old_df1 %>% 
     inner_join(new_df1, by = c(key_col, "key")) %>%
     filter(value.x != value.y | is.na(value.x) != is.na(value.y)) %>%
     select(-value.x) %>%
-    spread(key, value.y) %>%
-    type_convert() %>%
-    bind_cols(get_sql_update(., key_col, tablename)) %>%
-    select(sql)
+    spread(key, value.y) 
+  
+  result_update <- NULL
+  if (nrow(update_df) > 0) {
+    result_update <- update_df %>%
+      type_convert() %>%
+      bind_cols(get_sql_update(., key_col, tablename)) %>%
+      select(sql)
+  }
   
   bind_rows(result_update, result_insert, result_delete)
   
