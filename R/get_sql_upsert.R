@@ -1,3 +1,12 @@
+#' compares two data.frames and transforms the delta into SQL commands
+#'
+#' @param new_df A \code{data.frame} or \code{tibble} specifiying the database table after the changes
+#' @param old_df A \code{data.frame} or \code{tibble} with the current database table content 
+#' @param tablename The name of the database table to delete from
+#' @param del_old Boolean flag to specify if missing data in new_df should be deleted 
+#'
+#' @export
+
 get_sql_upsert <- function(new_df, old_df, key_col, tablename, del_old = FALSE) {
 
   if (any(sort(colnames(new_df)) != sort(colnames(old_df)))) stop("column names are different")

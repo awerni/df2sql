@@ -1,3 +1,11 @@
+#' transforms a data frame content into SQL update commands
+#'
+#' @param df A \code{data.frame} or \code{tibble} as a source for SQL update commands
+#' @param key_col The primary key for replacements 
+#' @param tablename The name of the database table to update from
+#'
+#' @export
+
 get_sql_update <- function(df, key_col, tablename) {
   val_col <- setdiff(colnames(df), key_col)
   

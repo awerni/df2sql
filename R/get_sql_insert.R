@@ -1,3 +1,11 @@
+#' transforms a data frame content into SQL insert commands
+#'
+#' @param df A \code{data.frame} or \code{tibble} as a source for SQL update commands
+#' @param tablename The name of the database table to update from
+#' @param add_method Specifies the import method (copy (default) or insert)
+#'
+#' @export
+
 get_sql_insert <- function(df, tablename, add_method = "copy") {
   
   if (!add_method %in% c("copy", "insert")) stop("unknown add_method")

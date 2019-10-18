@@ -1,3 +1,10 @@
+#' transforms a data frame content into SQL delete commands
+#'
+#' @param df A \code{data.frame} or \code{tibble} as a source for SQL delete commands
+#' @param tablename The name of the database table to delete from
+#'
+#' @export
+
 get_sql_delete <- function(df, tablename) {
   
   key_col <- colnames(df)
