@@ -1,31 +1,55 @@
-#' transforms a data frame content into SQL update commands
-#'
-#' @param df A \code{data.frame} or \code{tibble} as a source for SQL update commands
+#' transforms the difference of two data frame's content into SQL update commands
+#' @param new_overlap_df A \code{data.frame} or \code{tibble} specifiying new vs. old overlap of the database table after the changes
+#' @param old_overlap_df A \code{data.frame} or \code{tibble} with new vs. old overlap of the current database table content 
 #' @param key_col The primary key for replacements 
 #' @param tablename The name of the database table to update from
 #'
 #' @export
 
-get_sql_update <- function(df, key_col, tablename) {
-  val_col <- setdiff(colnames(df), key_col)
+get_sql_update <- function(new_overlap_df, old_overlap_df, key_col, tablename) {
   
-  df <- df %>% mutate_if(is.factor, as.character)
+  old_df1 <- old_overlap_df %>%
+    gather_("key", "value", gather_cols = val_col)
   
-  type_df <- map_df(df, class) %>%
-    gather() %>% 
-    mutate(sep = ifelse(value == "character", "'", "")) %>%
-    select(-value)
+  new_df1 <- new_overlap_df %>%
+    gather_("key", "value", gather_cols = val_col)
   
-  df %>%
-    mutate(sql_id = 1:n()) %>%
+  class_def <- new_overlap_df %>% map_df(class) %>% map(as.character) %>% unlist()
+  
+  # records with new values
+  df <- old_df1 %>% 
+    inner_join(new_df1, by = c(key_col, "key")) %>%
+    filter(value.x != value.y | is.na(value.x) != is.na(value.y)) %>%
+    select(-value.x) %>%
+    rename(value = value.y) %>%
+    mutate(value = ifelse(is.na(value), "NULL", 
+                          ifelse(class_def[key] == "character", paste0("'", value, "'"), value)))
+  
+  if (nrow(df) == 0) return()
+  
+  class_def <- df %>% select_(key_col) %>% map_df(class) %>% map(as.character) %>% unlist()
+  
+  df_temp <- df %>%
+    mutate(set = paste0(key, "=", value)) %>%
+    select(-key, -value) %>%
+    group_by_(key_col) %>%
+    summarise(all_cols = paste(set, collapse = ",")) %>%
+    ungroup() %>%
+    mutate(sql_id = row_number())
+
+  df_key <- df_temp %>%
+    select(key_col, sql_id) %>%
     gather(key, value, -sql_id) %>%
-    full_join(type_df, by = "key") %>%
-    mutate(sql = ifelse(is.na(value), paste0(key, " = NULL"), 
-                        paste0(key,  " = ", sep, value, sep))) %>%
-    select(-value, -sep) %>%
-    spread(key, sql) %>%
-    unite(sql_set, val_col, sep = ",", remove = TRUE) %>%
-    unite(sql_where, key_col, sep = " AND ", remove = TRUE) %>%
-    mutate(sql = paste("UPDATE", tablename, "SET", sql_set, "WHERE", sql_where)) %>%
+    mutate(value = ifelse(class_def[key] == "character", paste0("'", value, "'"), value)) %>%
+    mutate(set = paste0(key, "=", value)) %>%
+    select(-key, -value) %>%
+    group_by(sql_id) %>%
+    summarise(sql_where = paste("WHERE", paste(set, collapse = " AND "))) %>%
+    ungroup() 
+    
+  df_temp %>%
+    select(-key_col) %>%
+    inner_join(df_key, by = "sql_id") %>%
+    mutate(sql = paste("UPDATE", tablename, "SET", all_cols, sql_where)) %>%
     select(sql)
 }
