@@ -8,13 +8,15 @@
 
 get_sql_update <- function(new_overlap_df, old_overlap_df, key_col, tablename) {
   
+  val_col <- setdiff(colnames(new_overlap_df), key_col)
+  
   old_df1 <- old_overlap_df %>%
     gather_("key", "value", gather_cols = val_col)
   
   new_df1 <- new_overlap_df %>%
     gather_("key", "value", gather_cols = val_col)
   
-  class_def <- new_overlap_df %>% map_df(class) %>% map(as.character) %>% unlist()
+  class_def1 <- new_overlap_df %>% map_df(class) %>% map(as.character) %>% unlist()
   
   # records with new values
   df <- old_df1 %>% 
@@ -23,16 +25,16 @@ get_sql_update <- function(new_overlap_df, old_overlap_df, key_col, tablename) {
     select(-value.x) %>%
     rename(value = value.y) %>%
     mutate(value = ifelse(is.na(value), "NULL", 
-                          ifelse(class_def[key] == "character", paste0("'", value, "'"), value)))
+                          ifelse(class_def1[key] == "character", paste0("'", value, "'"), value)))
   
   if (nrow(df) == 0) return()
   
-  class_def <- df %>% select_(key_col) %>% map_df(class) %>% map(as.character) %>% unlist()
+  class_def2 <- df %>% select(key_col) %>% map_df(class) %>% map(as.character) %>% unlist()
   
   df_temp <- df %>%
     mutate(set = paste0(key, "=", value)) %>%
     select(-key, -value) %>%
-    group_by_(key_col) %>%
+    group_by_at(vars(key_col)) %>%
     summarise(all_cols = paste(set, collapse = ",")) %>%
     ungroup() %>%
     mutate(sql_id = row_number())
@@ -40,7 +42,7 @@ get_sql_update <- function(new_overlap_df, old_overlap_df, key_col, tablename) {
   df_key <- df_temp %>%
     select(key_col, sql_id) %>%
     gather(key, value, -sql_id) %>%
-    mutate(value = ifelse(class_def[key] == "character", paste0("'", value, "'"), value)) %>%
+    mutate(value = ifelse(class_def2[key] == "character", paste0("'", value, "'"), value)) %>%
     mutate(set = paste0(key, "=", value)) %>%
     select(-key, -value) %>%
     group_by(sql_id) %>%
