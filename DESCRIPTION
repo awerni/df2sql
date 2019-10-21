@@ -5,6 +5,7 @@ Authors@R: person("Andreas", "Wernitznig", email = "andreas@werniznig.com",
                   role = c("aut", "cre"))
 Description: transforms data frames to SQL commands 
 Depends: R (>= 3.5.0)
+Imports: dplyr, tidyr, purrr 
 License: GNU public license 3.0 
 LazyData: true
 RoxygenNote: 6.1.1
