@@ -7,7 +7,7 @@
 #' @export
 
 get_sql_insert <- function(df, tablename, add_method = "copy") {
-  
+  add_method <- tolower(add_method)
   if (!add_method %in% c("copy", "insert")) stop("unknown add_method")
   
   df <- df %>% mutate_if(is.factor, as.character)
