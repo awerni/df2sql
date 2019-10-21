@@ -1,6 +1,6 @@
 Package: df2sql 
 Title: transforms data frames to SQL commands 
-Version: 0.11
+Version: 0.12
 Authors@R: person("Andreas", "Wernitznig", email = "andreas@werniznig.com",
                   role = c("aut", "cre"))
 Description: transforms data frames to SQL commands 
