@@ -5,49 +5,50 @@
 #' @param add_method Specifies the import method (copy (default) or insert)
 #'
 #' @export
+#' @importFrom magrittr %>%
 
 get_sql_insert <- function(df, tablename, add_method = "copy") {
   add_method <- tolower(add_method)
   if (!add_method %in% c("copy", "insert")) stop("unknown add_method")
   
-  df <- df %>% mutate_if(is.factor, as.character)
+  df <- df %>% dplyr::mutate_if(is.factor, as.character)
   
-  type_df <- map_df(df, class) %>% 
-    gather() %>% 
-    mutate(sep = ifelse(value == "character", "'", "")) %>%
-    select(-value)
+  type_df <- purrr::map_df(df, class) %>% 
+    tidyr::gather() %>% 
+    dplyr::mutate(sep = ifelse(value == "character", "'", "")) %>%
+    dplyr::select(-value)
 
   if (add_method == "insert") {
     
     df %>%
-      mutate(sql_id = 1:n()) %>%
-      gather(key, value, -sql_id) %>%
-      full_join(type_df, by = "key") %>%
-      mutate(sql = ifelse(is.na(value), paste0("NULL"), 
+      dplyr::mutate(sql_id = 1:n()) %>%
+      tidyr::gather(key, value, -sql_id) %>%
+      dplyr::full_join(type_df, by = "key") %>%
+      dplyr::mutate(sql = ifelse(is.na(value), paste0("NULL"), 
                           paste0(sep, value, sep))) %>%
-      select(-value, -sep) %>%
-      spread(key, sql) %>%
-      mutate(sql_insert = paste0("INSERT INTO ", tablename, " (", paste(colnames(df), collapse = ", "), ")")) %>%
-      unite(sql_col, colnames(df), sep = ",", remove = TRUE) %>%
-      mutate(sql = paste0(sql_insert, " VALUES (", sql_col, ")")) %>%
-      select(sql)
+      dplyr::select(-value, -sep) %>%
+      tidyr::spread(key, sql) %>%
+      dplyr::mutate(sql_insert = paste0("INSERT INTO ", tablename, " (", paste(colnames(df), collapse = ", "), ")")) %>%
+      tidyr::unite(sql_col, colnames(df), sep = ",", remove = TRUE) %>%
+      dplyr::mutate(sql = paste0(sql_insert, " VALUES (", sql_col, ")")) %>%
+      dplyr::select(sql)
     
   } else {
     df1 <- df %>%
-      mutate(sql_id = 1:n()) %>%
-      gather(key, value, -sql_id) %>%
-      full_join(type_df, by = "key") %>%
-      mutate(sql = ifelse(is.na(value), "\\N", value)) %>%
-      select(-value, -sep) %>%
-      spread(key, sql) %>%
-      unite(sql, colnames(df), sep = "\t", remove = TRUE) %>%
-      select(sql)
+      dplyr::mutate(sql_id = 1:n()) %>%
+      tidyr::gather(key, value, -sql_id) %>%
+      dplyr::full_join(type_df, by = "key") %>%
+      dplyr::mutate(sql = ifelse(is.na(value), "\\N", value)) %>%
+      dplyr::select(-value, -sep) %>%
+      tidyr::spread(key, sql) %>%
+      tidyr::unite(sql, colnames(df), sep = "\t", remove = TRUE) %>%
+      dplyr::select(sql)
     
     df2 <- data.frame(sql = paste0("COPY ", tablename, " (", 
                                    paste(colnames(df), collapse = ","), ") FROM stdin;"), 
                       stringsAsFactors = FALSE) %>%
-      bind_rows(df1) %>%
-      bind_rows(data.frame(sql = "\\.", stringsAsFactors = FALSE))
+      dplyr::bind_rows(df1) %>%
+      dplyr::bind_rows(data.frame(sql = "\\.", stringsAsFactors = FALSE))
     
     return(df2)
   }

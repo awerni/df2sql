@@ -5,53 +5,54 @@
 #' @param tablename The name of the database table to update from
 #'
 #' @export
+#' @importFrom magrittr %>%
 
 get_sql_update <- function(new_overlap_df, old_overlap_df, key_col, tablename) {
   
   val_col <- setdiff(colnames(new_overlap_df), key_col)
   
   old_df1 <- old_overlap_df %>%
-    gather_("key", "value", gather_cols = val_col)
+    tidyr::gather_("key", "value", gather_cols = val_col)
   
   new_df1 <- new_overlap_df %>%
-    gather_("key", "value", gather_cols = val_col)
+    tidyr::gather_("key", "value", gather_cols = val_col)
   
-  class_def1 <- new_overlap_df %>% map_df(class) %>% map(as.character) %>% unlist()
+  class_def1 <- new_overlap_df %>% purrr::map_df(class) %>% purrr::map(as.character) %>% unlist()
   
   # records with new values
   df <- old_df1 %>% 
-    inner_join(new_df1, by = c(key_col, "key")) %>%
-    filter(value.x != value.y | is.na(value.x) != is.na(value.y)) %>%
-    select(-value.x) %>%
-    rename(value = value.y) %>%
-    mutate(value = ifelse(is.na(value), "NULL", 
+    dplyr::inner_join(new_df1, by = c(key_col, "key")) %>%
+    dplyr::filter(value.x != value.y | is.na(value.x) != is.na(value.y)) %>%
+    dplyr::select(-value.x) %>%
+    dplyr::rename(value = value.y) %>%
+    dplyr::mutate(value = ifelse(is.na(value), "NULL", 
                           ifelse(class_def1[key] == "character", paste0("'", value, "'"), value)))
   
   if (nrow(df) == 0) return()
   
-  class_def2 <- df %>% select(key_col) %>% map_df(class) %>% map(as.character) %>% unlist()
+  class_def2 <- df %>% dplyr::select(key_col) %>% map_df(class) %>% map(as.character) %>% unlist()
   
   df_temp <- df %>%
-    mutate(set = paste0(key, "=", value)) %>%
-    select(-key, -value) %>%
-    group_by_at(vars(key_col)) %>%
-    summarise(all_cols = paste(set, collapse = ",")) %>%
-    ungroup() %>%
-    mutate(sql_id = row_number())
+    dplyr::mutate(set = paste0(key, "=", value)) %>%
+    dplyr::select(-key, -value) %>%
+    dplyr::group_by_at(vars(key_col)) %>%
+    dplyr::summarise(all_cols = paste(set, collapse = ",")) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(sql_id = row_number())
 
   df_key <- df_temp %>%
-    select(key_col, sql_id) %>%
-    gather(key, value, -sql_id) %>%
-    mutate(value = ifelse(class_def2[key] == "character", paste0("'", value, "'"), value)) %>%
-    mutate(set = paste0(key, "=", value)) %>%
-    select(-key, -value) %>%
-    group_by(sql_id) %>%
-    summarise(sql_where = paste("WHERE", paste(set, collapse = " AND "))) %>%
-    ungroup() 
+    dplyr::select(key_col, sql_id) %>%
+    tidyr::gather(key, value, -sql_id) %>%
+    dplyr::mutate(value = ifelse(class_def2[key] == "character", paste0("'", value, "'"), value)) %>%
+    dplyr::mutate(set = paste0(key, "=", value)) %>%
+    dplyr::select(-key, -value) %>%
+    dplyr::group_by(sql_id) %>%
+    dplyr::summarise(sql_where = paste("WHERE", paste(set, collapse = " AND "))) %>%
+    dplyr:: ungroup() 
     
   df_temp %>%
-    select(-key_col) %>%
-    inner_join(df_key, by = "sql_id") %>%
-    mutate(sql = paste("UPDATE", tablename, "SET", all_cols, sql_where)) %>%
-    select(sql)
+    dplyr::select(-key_col) %>%
+    dplyr::inner_join(df_key, by = "sql_id") %>%
+    dplyr::mutate(sql = paste("UPDATE", tablename, "SET", all_cols, sql_where)) %>%
+    dplyr::select(sql)
 }
