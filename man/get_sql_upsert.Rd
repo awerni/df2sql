@@ -4,7 +4,8 @@
 \alias{get_sql_upsert}
 \title{compares two data.frames and transforms the delta into SQL commands}
 \usage{
-get_sql_upsert(new_df, old_df, key_col, tablename, del_old = FALSE)
+get_sql_upsert(new_df, old_df, key_col, tablename, add_method = "copy",
+  del_old = FALSE)
 }
 \arguments{
 \item{new_df}{A \code{data.frame} or \code{tibble} specifiying the database table after the changes}
@@ -12,6 +13,8 @@ get_sql_upsert(new_df, old_df, key_col, tablename, del_old = FALSE)
 \item{old_df}{A \code{data.frame} or \code{tibble} with the current database table content}
 
 \item{tablename}{The name of the database table to delete from}
+
+\item{add_method}{Specifies the import method (copy (default) or insert)}
 
 \item{del_old}{Boolean flag to specify if missing data in new_df should be deleted}
 }

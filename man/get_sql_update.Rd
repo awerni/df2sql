@@ -2,17 +2,19 @@
 % Please edit documentation in R/get_sql_update.R
 \name{get_sql_update}
 \alias{get_sql_update}
-\title{transforms a data frame content into SQL update commands}
+\title{transforms the difference of two data frame's content into SQL update commands}
 \usage{
-get_sql_update(df, key_col, tablename)
+get_sql_update(new_overlap_df, old_overlap_df, key_col, tablename)
 }
 \arguments{
-\item{df}{A \code{data.frame} or \code{tibble} as a source for SQL update commands}
+\item{new_overlap_df}{A \code{data.frame} or \code{tibble} specifiying new vs. old overlap of the database table after the changes}
+
+\item{old_overlap_df}{A \code{data.frame} or \code{tibble} with new vs. old overlap of the current database table content}
 
 \item{key_col}{The primary key for replacements}
 
 \item{tablename}{The name of the database table to update from}
 }
 \description{
-transforms a data frame content into SQL update commands
+transforms the difference of two data frame's content into SQL update commands
 }
