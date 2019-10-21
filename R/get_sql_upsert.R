@@ -38,15 +38,15 @@ get_sql_upsert <- function(new_df, old_df, key_col, tablename, add_method = "cop
   }
   
   # --- discarded in new_df
-  old_keys <- keys_from_old %>% anti_join( keys_from_new, by = key_col)
-  old_clean_df <- old_df %>% anti_join(old_keys, by = key_col)
+  old_keys <- keys_from_old %>% anti_join(keys_from_new, by = key_col)
+  old_overlap_df <- old_df %>% anti_join(old_keys, by = key_col)
   
   result_delete <- NULL
   if (del_old & nrow(old_keys) > 0) {
     result_delete <- get_sql_delete(old_keys, tablename)
   }
   
-  result_update <- get_sql_update(new_overlap_df, old_clean_df, key_col, tablename)
+  result_update <- get_sql_update(new_overlap_df, old_overlap_df, key_col, tablename)
   
   bind_rows(result_delete, result_insert, result_update)
 }
