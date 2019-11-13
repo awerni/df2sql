@@ -18,10 +18,13 @@ get_sql_upsert <- function(new_df, old_df, key_col, tablename, add_method = "cop
   
   coltypes_different <- type_old_df %>% 
     dplyr::left_join(type_new_df, by = "key") %>% 
-    dplyr::mutate(different = value.x != value.y) %>% 
-    .$different %>% any()
+    dplyr::mutate(different = value.x != value.y)
   
-  if (coltypes_different) stop("column types are different")
+  if (any(coltypes_different$different)) {
+    diff_coltypes <- coltypes_different %>% filter(different) %>% .$key
+    if (length(diff_coltypes) == 1) stop("column type of column ", diff_coltypes, " is different.")
+    else stop("column types of columns ", paste(diff_coltypes, collapse = ", "), " are different.")
+  }
   
   val_col <- setdiff(colnames(new_df), key_col)
   
