@@ -9,13 +9,8 @@
 
 get_sql_update <- function(new_overlap_df, old_overlap_df, key_col, tablename) {
   
-  val_col <- setdiff(colnames(new_overlap_df), key_col)
-  
-  old_df1 <- old_overlap_df %>%
-    tidyr::gather(key, value, gather_cols = val_col)
-  
-  new_df1 <- new_overlap_df %>%
-    tidyr::gather(key, value, gather_cols = val_col)
+  old_df1 <- old_overlap_df %>% tidyr::gather(key, value, -!!key_col)
+  new_df1 <- new_overlap_df %>% tidyr::gather(key, value, -!!key_col)
   
   class_def1 <- new_overlap_df %>% purrr::map_df(class) %>% purrr::map(as.character) %>% unlist()
   
